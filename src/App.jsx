@@ -4,18 +4,21 @@ import { Program, AnchorProvider, web3 } from '@project-serum/anchor';
 import React, {useEffect, useState} from 'react';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css'; 
+import kp from './keypair.json'
 
 
-import * as buffer from "buffer";
+import { Buffer } from 'buffer';
 
-window.Buffer = buffer.Buffer;
+window.Buffer = Buffer;
 
 
 // Referencia al tiempo de ejecucion de solana
 const { SystemProgram, Keypair } = web3;
 
-// Crea un keypar para la cuenta que va a holdear la data del GIF
-let baseAccount = Keypair.generate();
+// Va a buscar el keyPair al json que creamos.
+const arr = Object.values(kp._keypair.secretKey)
+const secret = new Uint8Array(arr)
+const baseAccount = web3.Keypair.fromSecretKey(secret)
 
 // Vamos a buscar el id del programa desde el archivo idl
 const programID = new PublicKey(idl.metadata.address);
@@ -32,14 +35,6 @@ const opts = {
 const TWITTER_HANDLE = '_buildspace';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 
-
-const TEST_GIFS = [
-	'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWx3aHV1NTJndWxmZHE4cHVsNmlwaGtzbTNhcWYwemlkcHRxNnU2NyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/gk3R16JhLP8RUka2nD/giphy.gif',
-	'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExczVqYzIzbWt2MHdmNnE5a3U3dWo5amNndmFnaWtsMWg3amNyMnE0aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/S8kcDWOvua4l6lJ0Az/giphy.gif',
-	'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbGd4cjd6b3pwbjM1Z3Jydml4MnBzaGxvY2NlMDN3MDNrZW1idWQ4eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xTiTnKH3dDw1ww53R6/giphy.gif',
-  'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWQ5bjV3bmZzODY0a3J0ODR0cG8zZTA4am5kMjZiZDIxaWZmZ3RhZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26hitFkJUgm7dWAwg/giphy.gif',
-  'https://media1.giphy.com/media/Ab0536HZcHEJmG5XPY/giphy.gif'
-]
 
 const App = () => {
 
@@ -169,12 +164,27 @@ const App = () => {
   }
 
   const sendGif = async () => {
-    if (inputValue.length > 0) {
-      console.log('Gif link:', inputValue);
-      setGifList([...gifList, inputValue]);
-      setInputValue('');
-    } else {
-      console.log('Input vacio, intenta nuevamente');
+    if (inputValue.length === 0) {
+      console.log("No se ha ingresado ningun link!")
+      return
+    }
+    setInputValue('');
+    console.log('Gif link:', inputValue);
+    try {
+      const provider = getProvider()
+      const program = await getProgram(); 
+  
+      await program.rpc.addGif(inputValue, {
+        accounts: {
+          baseAccount: baseAccount.publicKey,
+          user: provider.wallet.publicKey,
+        },
+      });
+      console.log("GIF enviado correctamente al programa", inputValue)
+  
+      await getGifList();
+    } catch (error) {
+      console.log("Error enviando el GIF:", error)
     }
   };
 
@@ -277,15 +287,7 @@ const App = () => {
           {!walletAddress && renderNotConnectedContainer()}
           {walletAddress && renderConnectedContainer()}
         </div>
-        <div className="footer-container">
-          <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
-          <a
-            className="footer-text"
-            href={TWITTER_LINK}
-            target="_blank"
-            rel="noreferrer"
-          >{`built on @${TWITTER_HANDLE}`}</a>
-        </div>
+        
       </div>
     </div>
   );
