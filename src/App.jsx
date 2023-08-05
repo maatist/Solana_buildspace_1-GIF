@@ -1,6 +1,6 @@
 import idl from './idl.json';
-import { Connection, NonceAccount, PublicKey, clusterApiUrl } from '@solana/web3.js';
-import { Program, Provider, web3 } from '@project-serum/anchor';
+import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Program, AnchorProvider, web3 } from '@project-serum/anchor';
 import React, {useEffect, useState} from 'react';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css'; 
@@ -105,7 +105,7 @@ const App = () => {
 
   const getProvider = () => {
     const connection = new Connection(network, opts.preflightCommitment);
-    const provider = new Provider(
+    const provider = new AnchorProvider(
       connection, window.solana, opts.preflightCommitment,
     );
     return provider;
@@ -115,8 +115,13 @@ const App = () => {
     try {
       const provider = getProvider();
       const program = await getProgram();
+
+      console.log("baseAccount:", baseAccount.publicKey.toString());
+      console.log("user:", provider.wallet.publicKey);
+      console.log("systemProgram:", SystemProgram.programId.toString());
       
       console.log("ping")
+
       await program.rpc.startStuffOff({
         accounts: {
           baseAccount: baseAccount.publicKey,
@@ -133,27 +138,6 @@ const App = () => {
     }
   }
 
-  const createGifAccountError = async () => {
-    try {
-      const provider = getProvider();
-      const program = new Program(idl, programID, provider);
-      console.log("ping")
-      await program.rpc.startStuffOff({
-        accounts: {
-          baseAccount: baseAccount.publicKey,
-          user: provider.wallet.publicKey,
-          systemProgram: SystemProgram.programId,
-        },
-        signers: [baseAccount]
-      });
-      console.log("Creada nueva BaseAccount con direccion:", baseAccount.publicKey.toString())
-      await getGifList();
-  
-    } catch(error) {
-      console.log("Error creadno el BaseAccount:", error)
-    }
-  }
-  
 
   const getGifListError = async() => {
     try {
