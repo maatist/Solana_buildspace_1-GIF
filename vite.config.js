@@ -5,12 +5,15 @@ import { defineConfig } from "vite";
  * @type { import('vite').UserConfig }
  */
 export default defineConfig({
-  define: {
+  /* define: {
     global: {},
     process: {
       'env': {}
     } 
-  },
+  }, */
+  define: {
+    _global: ({})
+},
   plugins: [reactRefresh()],
   server: {
     host: '0.0.0.0',
